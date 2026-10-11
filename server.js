@@ -34,11 +34,13 @@ app.post("/download", async (req, res) => {
 
 
         let video =
-        $('meta[property="og:video"]').attr("content");
-
+$('meta[property="og:video:secure_url"]').attr("content") ||
+$('meta[property="og:video"]').attr("content") ||
+$('meta[name="twitter:player:stream"]').attr("content");
 
         if (!video) {
-            return res.send("Video not found");
+    console.log(html.substring(0,2000));
+    return res.send("No video metadata found");
         }
 
 
