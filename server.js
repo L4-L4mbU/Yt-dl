@@ -1,54 +1,72 @@
 const express = require("express");
-const ytdlp = require("yt-dlp-exec");
-const fs = require("fs");
+const axios = require("axios");
+const cheerio = require("cheerio");
 
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
-
 const PORT = process.env.PORT || 3000;
 
 
-app.post("/download", async (req,res)=>{
+app.post("/download", async (req, res) => {
 
     const url = req.body.url;
 
-    if(!url){
+    if (!url) {
         return res.send("No URL");
     }
 
+    try {
 
-    const file = `audio_${Date.now()}.mp3`;
-
-
-    try{
-
-        console.log("Downloading:",url);
-
-
-        await ytdlp(url,{
-            extractAudio:true,
-            audioFormat:"mp3",
-            output:file,
-            audioQuality:0
+        const response = await axios.get(url, {
+            headers: {
+                "User-Agent":
+                "Mozilla/5.0"
+            }
         });
 
 
-        res.download(file,"audio.mp3",()=>{
+        const html = response.data;
 
-            fs.unlink(file,()=>{});
+        const $ = cheerio.load(html);
 
+
+        let video =
+        $('meta[property="og:video"]').attr("content");
+
+
+        if (!video) {
+            return res.send("Video not found");
+        }
+
+
+        const videoData = await axios.get(video, {
+            responseType: "stream"
         });
 
 
-    }catch(error){
+        res.setHeader(
+            "Content-Disposition",
+            "attachment; filename=reel.mp4"
+        );
+
+        res.setHeader(
+            "Content-Type",
+            "video/mp4"
+        );
+
+
+        videoData.data.pipe(res);
+
+
+    } catch(error) {
 
         console.log(error);
-
-        res.status(500)
-        .send("Conversion failed");
+        res.status(500).send(
+            "Failed to download"
+        );
 
     }
 
@@ -57,6 +75,8 @@ app.post("/download", async (req,res)=>{
 
 app.listen(PORT,"0.0.0.0",()=>{
 
-    console.log("Running on port "+PORT);
+    console.log(
+        "Running on port "+PORT
+    );
 
 });
