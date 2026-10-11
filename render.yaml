@@ -1,5 +1,0 @@
-services:
-  - type: web
-    name: youtube-mp3
-    env: docker
-    plan: free
